@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #111111;
+            color: #ffffff;
+
+ 
+        }
+        img {
+            max-width: 100%;
+            height: 250px;
+            width: 300px;
+            border: 0.5px solid;
+            border-radius: 12px;
+        }
+        .main{
+            width: 100%;
+            display: flex;
+            /* border: 1px solid red; */
+        }
+        .inner{
+            width: 50%;
+            height: 300px;
+            /* border: 1px solid blue; */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            
+        }
+        img{
+            background-color: #ffffffed;
+        }
+        h1{
+            background-color: red;
+            width: 100%;
+        }
+        h3{
+            margin: 0;
+            font-weight: 500;
+        }
+        button{
+            background-color: #ff0000dc;
+            border:1px solid;
+            border-radius: 5px;
+            padding:2px 4px;
+            color: #fff;
+            font-weight: 400;
+        }
+        
+    </style>
+</head>
+<body>
+    <h1>Vehicle Detection System</h1>
+    <div class="main">
+     <div class="inner">
+        <h3>Original Image</h3>
+        <img id="originalImage" class="img" width="300px">
+        <input type="file" id="imageUpload" accept="image/*"> 
+     </div> 
+     <div class="inner">
+        <h3>Detected Image</h3>
+        <img id="outputImage" class="img" width="300px">
+        <button onclick="uploadImage()">Detect</button>
+        
+    </div>
+   
+    </div>
+     <p id="vehicleCount" style="display:none;"></p>
+    <script>
+        function uploadImage() {
+            let input = document.getElementById('imageUpload');
+            if (!input.files.length) {
+                alert("Please select an image file");
+                return;
+            }
+            let file = input.files[0];
+            let formData = new FormData();
+            formData.append("file", file);
+            
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById("originalImage").src = e.target.result;
+                document.getElementById("originalImage").style.display = "block";
+                document.getElementById("outputImage").style.display = "none"; // Hide old result
+                document.getElementById("vehicleCount").style.display = "none";
+            };
+            reader.readAsDataURL(file);
+            
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.output_image) {
+                    let timestamp = new Date().getTime(); // Unique timestamp to prevent caching
+                    document.getElementById("outputImage").src = data.output_image + "?t=" + timestamp;
+                    document.getElementById("outputImage").style.display = "block";
+                }
+                
+                if (data.vehicle_counts) {
+                    let vehicleText = "Detected Vehicles: ";
+                    for (let type in data.vehicle_counts) {
+                        vehicleText += `${type}: ${data.vehicle_counts[type]} `;
+                    }
+                    document.getElementById("vehicleCount").innerText = vehicleText;
+                    document.getElementById("vehicleCount").style.display = "block";
+                }
+                
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+            
+</body>
+</html>
